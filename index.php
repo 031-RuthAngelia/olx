@@ -35,7 +35,7 @@
       <div class="d-flex gap-2">
         <a href="login.php" class="btn btn-outline-primary">Masuk</a>
         <a href="register.php" class="btn btn-outline-primary">Daftar</a>
-        <a href="#" class="btn btn-primary">Pasang Iklan</a>
+        <a href="postad.php" class="btn btn-primary">Pasang Iklan</a>
       </div>
     </div>
   </div>
