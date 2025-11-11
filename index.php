@@ -33,8 +33,9 @@
         <li class="nav-item"><a class="nav-link" href="#terbaru">Iklan Terbaru</a></li>
       </ul>
       <div class="d-flex gap-2">
-        <a href="#" class="btn btn-outline-primary">Masuk</a>
-        <a href="#" class="btn btn-primary">Pasang Iklan</a>
+        <a href="olx/login.php" class="btn btn-outline-primary">Masuk</a>
+        <a href="olx/register.php" class="btn btn-outline-primary">Daftar</a>
+        <a href="olx/pasang-iklan.php" class="btn btn-primary">Pasang Iklan</a>
       </div>
     </div>
   </div>
