@@ -4,11 +4,13 @@ require_once __DIR__ . '/config.php';
 $errors = [];
 $name = '';
 $email = '';
+$whatsapp = '';
 $agree = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $name = trim($_POST['name'] ?? '');
   $email = trim($_POST['email'] ?? '');
+  $whatsapp = trim($_POST['whatsapp'] ?? '');
   $password = $_POST['password'] ?? '';
   $password2 = $_POST['password2'] ?? '';
   $agree = isset($_POST['agree']);
@@ -18,6 +20,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
   if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 100) {
     $errors[] = 'Email tidak valid.';
+  }
+  if ($whatsapp !== '') {
+    $wa = preg_replace('/\s+|\-|\(|\)/', '', $whatsapp);
+    if (strpos($wa, '+') === 0) { $wa = substr($wa, 1); }
+    if (strpos($wa, '0') === 0) { $wa = '62' . substr($wa, 1); }
+    if (!ctype_digit($wa) || mb_strlen($wa) < 8 || mb_strlen($wa) > 15) {
+      $errors[] = 'Nomor WhatsApp tidak valid.';
+    }
   }
   if (mb_strlen($password) < 8) {
     $errors[] = 'Kata sandi minimal 8 karakter.';
@@ -37,8 +47,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Email sudah terdaftar.';
       } else {
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $ins = $pdo->prepare('INSERT INTO users (name, email, password) VALUES (?, ?, ?)');
-        $ins->execute([$name, $email, $hash]);
+        $waToSave = null;
+        if ($whatsapp !== '') {
+          $wa = preg_replace('/\s+|\-|\(|\)/', '', $whatsapp);
+          if (strpos($wa, '+') === 0) { $wa = substr($wa, 1); }
+          if (strpos($wa, '0') === 0) { $wa = '62' . substr($wa, 1); }
+          $waToSave = $wa;
+        }
+        $ins = $pdo->prepare('INSERT INTO users (name, email, password, whatsapp) VALUES (?, ?, ?, ?)');
+        $ins->execute([$name, $email, $hash, $waToSave]);
         header('Location: success.php');
         exit;
       }
@@ -112,6 +129,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="col-12">
               <label for="inputEmail" class="form-label">Email</label>
               <input type="email" class="form-control" id="inputEmail" name="email" placeholder="nama@contoh.com" value="<?= htmlspecialchars($email ?? '', ENT_QUOTES, 'UTF-8') ?>" maxlength="100" required>
+            </div>
+            <div class="col-12">
+              <label for="inputWhatsApp" class="form-label">WhatsApp</label>
+              <input type="text" class="form-control" id="inputWhatsApp" name="whatsapp" placeholder="Contoh: 628123456789" value="<?= htmlspecialchars($whatsapp ?? '', ENT_QUOTES, 'UTF-8') ?>" maxlength="20">
             </div>
             <div class="col-12 col-md-6">
               <label for="inputPassword" class="form-label">Kata Sandi</label>
