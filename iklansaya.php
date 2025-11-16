@@ -11,6 +11,48 @@ if (empty($_SESSION['user_id'])) {
 $userId = (int)$_SESSION['user_id'];
 $name = (string)($_SESSION['user_name'] ?? 'Pengguna');
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+  $adId = (int)($_POST['delete_id'] ?? 0);
+  if ($adId > 0) {
+    try {
+      $pdo->beginTransaction();
+
+      $imgStmt = $pdo->prepare('SELECT image_path FROM ad_images WHERE ad_id = ?');
+      $imgStmt->execute([$adId]);
+      $images = $imgStmt->fetchAll();
+
+      $delAd = $pdo->prepare('DELETE FROM ads WHERE id = ? AND user_id = ?');
+      $delAd->execute([$adId, $userId]);
+
+      if ($delAd->rowCount() > 0) {
+        $delImg = $pdo->prepare('DELETE FROM ad_images WHERE ad_id = ?');
+        $delImg->execute([$adId]);
+
+        foreach ($images as $img) {
+          if (!empty($img['image_path'])) {
+            $file = __DIR__ . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $img['image_path']);
+            if (is_file($file)) {
+              @unlink($file);
+            }
+          }
+        }
+
+        $pdo->commit();
+      } else {
+        $pdo->rollBack();
+      }
+    } catch (Throwable $e) {
+      if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+      }
+    }
+  }
+
+  header('Location: iklansaya.php');
+  echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=iklansaya.php"></head><body><script>window.location.replace("iklansaya.php");</script></body></html>';
+  exit;
+}
+
 $ads = [];
 try {
   $stmt = $pdo->prepare(
@@ -42,6 +84,10 @@ try {
   .ad-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.08)}
   .price{color:#0d6efd; font-weight:700}
   .ad-img{aspect-ratio:4/3; object-fit:cover}
+  .btn-primary:hover{background-color:#0b5ed7;border-color:#0a58ca}
+  .btn-outline-secondary:hover{background-color:#6c757d;color:#fff}
+  .btn-outline-primary:hover{background-color:#0d6efd;color:#fff}
+  .btn-outline-danger:hover{background-color:#dc3545;color:#fff}
 </style>
 </head>
 <body>
@@ -95,7 +141,16 @@ try {
                   <div class="price">Rp <?php echo number_format((float)$ad['price'], 0, ',', '.'); ?></div>
                 </div>
                 <div class="text-muted small"><?php echo htmlspecialchars($ad['category_name'], ENT_QUOTES, 'UTF-8'); ?> • <?php echo htmlspecialchars($ad['location'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></div>
-                <a class="stretched-link" href="detail.php?id=<?php echo (int)$ad['id']; ?>" aria-label="Lihat detail"></a>
+                <div class="d-flex justify-content-between align-items-center mt-2 gap-2">
+                  <a href="editad.php?id=<?php echo (int)$ad['id']; ?>" class="btn btn-sm btn-outline-primary">Edit</a>
+                  <form method="post" action="iklansaya.php" class="m-0" onsubmit="return confirm('Yakin ingin menghapus iklan ini?');">
+                    <input type="hidden" name="delete_id" value="<?php echo (int)$ad['id']; ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+                  </form>
+                </div>
+                <div class="mt-2">
+                  <a href="detail.php?id=<?php echo (int)$ad['id']; ?>" class="small text-decoration-none">Lihat detail</a>
+                </div>
               </div>
             </div>
           </div>
